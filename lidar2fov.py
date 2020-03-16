@@ -101,6 +101,7 @@ def save_as_scatter_plt(pts_image, output_path):
 def save_as_grid_plt(pts_image, img_size, output_path):
     # projection lidar to image
     grid = lidarimg2grid(pts_image, img_size)
+
     plt.imsave(output_path, grid)
     plt.close()
     print("Grid size: ", Image.open(output_path).size)
@@ -108,6 +109,7 @@ def save_as_grid_plt(pts_image, img_size, output_path):
 
 def main(chosen_dataset):
     dataset = None
+    kitti = Kitti()
     if chosen_dataset == "kitti":
         dataset = Kitti()
     elif chosen_dataset == "lyft":
@@ -118,10 +120,10 @@ def main(chosen_dataset):
         print("Error: Unknown dataset '%s'" % chosen_dataset)
         exit()
 
-    for idx in range(len(dataset.files_list))[:10]:
+    for idx in range(len(dataset.files_list)):
         lidar = dataset.get_lidar(idx)
-        img = dataset.get_image(idx)
-        calib = dataset.get_calib(idx)
+        img = kitti.get_image(idx)
+        calib = kitti.get_calib(idx)
         rect_pts = calib.project_velo_to_rect(lidar[:, 0:3])
         points_2d = calib.project_rect_to_image(rect_pts)
         pts_image, pts_xyz_mask = get_mask(rect_pts, points_2d, imgsize=img.size)
@@ -130,7 +132,7 @@ def main(chosen_dataset):
         setup_plt()
         output_name = dataset.files_list[idx].split('.')[0] + '.png'
         output_path = os.path.join(dataset.lidar_fov_path, output_name)
-        save_as_scatter_plt(pts_image, output_path)
+        #save_as_scatter_plt(pts_image, output_path)
         save_as_grid_plt(pts_image, img.size, output_path)
 
 
