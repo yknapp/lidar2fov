@@ -103,19 +103,19 @@ def setup_plt():
     axes.get_yaxis().set_visible(False)
 
 
-def save_as_scatter_plt(pts_image, output_path):
-    plt.scatter(pts_image[:, 0], -pts_image[:, 1], c=pts_image[:, 2], cmap='gray', s=1)  # negative, so image isn't upside down
-    plt.axis('off')
-    plt.savefig(output_path, bbox_inches='tight', pad_inches=0)
-    plt.close()
-    print("scatter plot size: ", Image.open(output_path).size)
-
-
-def save_as_grid_plt(pts_image, img_size, output_path):
+def pts_img_to_grid_img(pts_image, img_size, crop=None):
     # projection lidar to image
-    grid = lidarimg2grid(pts_image, img_size)
+    grid_img = lidarimg2grid(pts_image, img_size)
+    print("before: ", grid_img.shape)
+    if crop:
+        grid_img = grid_img[:, crop[0]:crop[1]]  # crop image size of grid
+    print("after: ", grid_img.shape)
 
-    plt.imsave(output_path, grid)
+    return grid_img
+
+
+def save_as_grid_plt(grid_img, output_path):
+    plt.imsave(output_path, grid_img)
     plt.close()
     print("Grid size: ", Image.open(output_path).size)
     
@@ -139,14 +139,23 @@ def main(chosen_dataset):
         calib = kitti.get_calib(idx)
         rect_pts = calib.project_velo_to_rect(lidar[:, 0:3])
         points_2d = calib.project_rect_to_image(rect_pts)
+
+        # collect points in fov
         pts_image, pts_xyz_mask = get_mask(rect_pts, points_2d, imgsize=img.size)
 
-        # save as plots
+        # project points onto image
+        if chosen_dataset != 'audi':
+            crop = None
+        else:
+            # crop image to audi's fov, because only objects inside audi's fov is labeled and kitti's fov is bigger
+            crop = (195, 1002)
+        grid_img = pts_img_to_grid_img(pts_image, img.size, crop)
+
+        # save as plot
         setup_plt()
         output_name = dataset.files_list[idx].split('.')[0] + '.png'
         output_path = os.path.join(dataset.lidar_fov_path, output_name)
-        #save_as_scatter_plt(pts_image, output_path)
-        save_as_grid_plt(pts_image, img.size, output_path)
+        save_as_grid_plt(grid_img, output_path)
 
 
 if __name__ == "__main__":
