@@ -106,10 +106,8 @@ def setup_plt():
 def pts_img_to_grid_img(pts_image, img_size, crop=None):
     # projection lidar to image
     grid_img = lidarimg2grid(pts_image, img_size)
-    print("before: ", grid_img.shape)
     if crop:
         grid_img = grid_img[:, crop[0]:crop[1]]  # crop image size of grid
-    print("after: ", grid_img.shape)
 
     return grid_img
 
@@ -135,7 +133,7 @@ def main(chosen_dataset):
 
     for idx in range(len(dataset.files_list)):
         lidar = dataset.get_lidar(idx)
-        img = kitti.get_image(idx)
+        img = kitti.get_image(idx=0)
         calib = kitti.get_calib(idx)
         rect_pts = calib.project_velo_to_rect(lidar[:, 0:3])
         points_2d = calib.project_rect_to_image(rect_pts)
