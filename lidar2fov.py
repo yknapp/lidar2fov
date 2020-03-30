@@ -14,7 +14,7 @@ from dataset import Kitti, Lyft, Audi
 def get_mask(rect_pts, points_2d, imgsize):
     mask = (points_2d[:, 0] >= 0) & (points_2d[:, 0] < imgsize[0]) & \
            (points_2d[:, 1] >= 0) & (points_2d[:, 1] < imgsize[1])
-    mask = mask & (rect_pts[:, 2] >= 2)
+    mask = mask & (rect_pts[:, 2] >= 2)  # minimal distance 2 meters
 
     # pts_on_image_with_depth = np.append(points_2d[mask, 0:2], rect_pts[mask, 2], axis=1)
 
@@ -24,13 +24,14 @@ def get_mask(rect_pts, points_2d, imgsize):
 
     # return points_2d[mask, 0:2], rect_pts[mask, ]
 
-    return pts_on_image_with_depth, rect_pts[mask,]
+    return pts_on_image_with_depth, rect_pts[mask, ]
 
 
 def lidarimg2grid(pts_image, img_shape):
     size_0 = img_shape[0]
     size_1 = img_shape[1]
     grid = np.zeros(img_shape[:2])
+    print(grid.shape)
     for p in pts_image:
         i = int(p[0]) - 1
         j = int(p[1]) - 1
@@ -39,6 +40,11 @@ def lidarimg2grid(pts_image, img_shape):
 
         grid[i, j] = value
 
+        # add 8 pixels next to "real" pixel coordinate to make the data point bigger
+        # X: original pixel, 0: additional pixel
+        # 0 0 0
+        # 0 X 0
+        # 0 0 0
         if i + 1 < size_0 and j + 1 < size_1:
             grid[i+1, j+1] = value
         if i < size_0 and j + 1 < size_1:
@@ -56,6 +62,13 @@ def lidarimg2grid(pts_image, img_shape):
         if i + 1 < size_0 and j - 1 >= 0:
             grid[i+1, j-1] = value
 
+        # add another 9 pixels
+        # 1: additional pixels
+        #   1 1 1
+        # 1 0 0 0 1
+        # 1 0 X 0 1
+        # 1 0 0 0 1
+        #   1 1 1
         if i + 2 < size_0 and j < size_1:
             grid[i+2, j] = value
         if i < size_0 and j + 2 < size_1:
@@ -66,7 +79,7 @@ def lidarimg2grid(pts_image, img_shape):
             grid[i, j-2] = value
         if i + 2 < size_0 and j + 1 < size_1:
             grid[i+2, j+1] = value
-        if i + 2 < size_0 and j + 1 >= 0:
+        if i + 2 < size_0 and j - 1 >= 0:
             grid[i+2, j-1] = value
         if i - 2 >= 0 and j + 1 < size_1:
             grid[i-2, j+1] = value
@@ -137,5 +150,5 @@ def main(chosen_dataset):
 
 
 if __name__ == "__main__":
-    _chosen_dataset = "lyft"  # 'kitti', 'lyft', 'audi'
+    _chosen_dataset = "audi"  # 'kitti', 'lyft', 'audi'
     main(_chosen_dataset)
