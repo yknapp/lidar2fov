@@ -1,9 +1,11 @@
 import os
 import numpy as np
+import cv2
+import object
+import json
+
 from PIL import Image
 from calibration import Calibration, KittiCalibration, AudiCalibration
-import cv2
-
 
 class Kitti:
     def __init__(self):
@@ -11,6 +13,7 @@ class Kitti:
         self.lidar_path = os.path.join(self.root_dir, "velodyne")
         self.image_path = os.path.join(self.root_dir, "image_2")
         self.calib_path = os.path.join(self.root_dir, "calib")
+        self.label_path = os.path.join(self.root_dir, "label_2")
         self.lidar_fov_path = "/home/user/work/master_thesis/datasets/lidar_fov_images/kitti/training"
         self.files_list = os.listdir(self.lidar_path)
 
@@ -18,6 +21,7 @@ class Kitti:
         n_vec = 4
         dtype = np.float32
         lidar_file = os.path.join(self.lidar_path, self.files_list[idx])
+        print("LIDAR_FILE: ", lidar_file)
         assert os.path.exists(lidar_file)
         lidar_pc_raw = np.fromfile(lidar_file, dtype)
         return lidar_pc_raw.reshape((-1, n_vec))
@@ -58,6 +62,13 @@ class Kitti:
 
         return calib
 
+    def get_label(self, idx):
+        label_file = os.path.join(self.label_path, self.files_list[idx].replace('.bin', '.txt'))
+        assert os.path.exists(label_file)
+        lines = [line.rstrip() for line in open(label_file)]
+        objects = [object.KittiObject3d(line) for line in lines]
+        return objects
+
 
 class Lyft:
     def __init__(self):
@@ -65,11 +76,13 @@ class Lyft:
         self.lidar_path = os.path.join(self.root_dir, "velodyne")
         self.image_path = os.path.join(self.root_dir, "image_2")
         self.calib_path = os.path.join(self.root_dir, "calib")
+        self.label_path = os.path.join(self.root_dir, "label_2")
         self.lidar_fov_path = "/home/user/work/master_thesis/datasets/lidar_fov_images/lyft"
         self.files_list = os.listdir(self.lidar_path)
 
     def get_lidar(self, idx):
         lidar_file = os.path.join(self.lidar_path, self.files_list[idx])
+        print("LIDAR_FILE: ", lidar_file)
         assert os.path.exists(lidar_file)
         return np.fromfile(lidar_file, dtype=np.float32).reshape(-1, 4)
 
@@ -83,6 +96,13 @@ class Lyft:
         assert os.path.exists(calib_file)
         return KittiCalibration(calib_file)
 
+    def get_label(self, idx):
+        label_file = os.path.join(self.label_path, self.files_list[idx].replace('.bin', '.txt'))
+        assert os.path.exists(label_file)
+        lines = [line.rstrip() for line in open(label_file)]
+        objects = [object.KittiObject3d(line) for line in lines]
+        return objects
+
 
 class Audi:
     def __init__(self):
@@ -90,6 +110,7 @@ class Audi:
         self.lidar_path = os.path.join(self.root_dir, "lidar", "cam_front_center")
         self.image_path = os.path.join(self.root_dir, "camera", "cam_front_center")
         self.calib_path = os.path.join(self.root_dir, "cams_lidars.json")
+        self.label_path = os.path.join(self.root_dir, "label3D", "cam_front_center")
         self.lidar_fov_path = os.path.join(self.root_dir, "/home/user/work/master_thesis/datasets/lidar_fov_images/audi")
         self.files_list = os.listdir(self.lidar_path)
 
@@ -104,7 +125,6 @@ class Audi:
 
     def get_image(self, idx):
         img_file = os.path.join(self.image_path, self.files_list[idx].replace('.npz', '.png').replace('lidar', 'camera'))
-        print("IMG: ", img_file)
         assert os.path.exists(img_file)
         return Image.open(img_file).convert("L")
 
@@ -112,3 +132,11 @@ class Audi:
         calib_file = self.calib_path
         assert os.path.exists(calib_file)
         return AudiCalibration(calib_file)
+
+    def get_label(self, idx):
+        label_file = os.path.join(self.label_path, self.files_list[idx].replace('.npz', '.json').replace('lidar', 'label3D'))
+        assert os.path.exists(label_file)
+        with open(label_file, 'r') as f:
+            bboxs = json.load(f)
+        objects = [object.AudiObject3d(bboxs[bbox]) for bbox in bboxs.keys()]
+        return objects
