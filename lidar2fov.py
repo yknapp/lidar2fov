@@ -6,6 +6,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2
 
 from PIL import Image
 from dataset import Kitti, Lyft, Audi
@@ -112,6 +113,47 @@ def pts_img_to_grid_img(pts_image, img_size, crop=None):
     return grid_img
 
 
+def draw_2d_bboxes_label(grid_img, object_labels):
+    #grid_img = np.array(grid_img)
+    grid_img = grid_img.astype(np.uint8)
+    for object_label in object_labels:
+        grid_img = cv2.line(grid_img, (int(object_label.xmin), int(object_label.ymin)), (int(object_label.xmax), int(object_label.ymin)), (255, 255, 0), 6)
+        grid_img = cv2.line(grid_img, (int(object_label.xmin), int(object_label.ymin)), (int(object_label.xmin), int(object_label.ymax)), (255, 255, 0), 6)
+        grid_img = cv2.line(grid_img, (int(object_label.xmax), int(object_label.ymin)), (int(object_label.xmax), int(object_label.ymax)), (255, 255, 0), 6)
+        grid_img = cv2.line(grid_img, (int(object_label.xmin), int(object_label.ymax)), (int(object_label.xmax), int(object_label.ymax)), (255, 255, 0), 6)
+    cv2.imshow("bla", grid_img)
+    cv2.waitKey()
+    exit()
+    return grid_img
+
+
+def draw_bboxes(grid_img, object_labels, calib):
+    #grid_img = np.array(grid_img)
+    grid_img = grid_img.astype(np.uint8)
+    line_thickness = 1
+
+    # get object coordinates
+    for object_label in object_labels:
+        bbox_2d, bbox_2d_rect = calib.compute_box_3d(object_label)
+
+        if bbox_2d is not None:
+            min_x = np.amin(bbox_2d[:, 0])
+            max_x = np.amax(bbox_2d[:, 0])
+            min_y = np.amin(bbox_2d[:, 1])
+            max_y = np.amax(bbox_2d[:, 1])
+
+            # draw 2D bounding box into grid image
+            grid_img = cv2.line(grid_img, (int(min_x), int(min_y)), (int(max_x), int(min_y)), (255, 255, 0), line_thickness)
+            grid_img = cv2.line(grid_img, (int(min_x), int(max_y)), (int(max_x), int(max_y)), (255, 255, 0), line_thickness)
+            grid_img = cv2.line(grid_img, (int(min_x), int(min_y)), (int(min_x), int(max_y)), (255, 255, 0), line_thickness)
+            grid_img = cv2.line(grid_img, (int(max_x), int(min_y)), (int(max_x), int(max_y)), (255, 255, 0), line_thickness)
+
+    # show image
+    cv2.imshow("bla", grid_img)
+    cv2.waitKey()
+    exit()
+
+
 def save_as_grid_plt(grid_img, output_path):
     plt.imsave(output_path, grid_img)
     plt.close()
@@ -131,31 +173,37 @@ def main(chosen_dataset):
         print("Error: Unknown dataset '%s'" % chosen_dataset)
         exit()
 
+    #if chosen_dataset == 'audi':
+    #    # crop image to audi's fov, because only objects inside audi's fov is labeled and kitti's fov is bigger
+    #    crop = (195, 1002)
+    #else:
+    crop = None
+
     for idx in range(len(dataset.files_list)):
         lidar = dataset.get_lidar(idx)
-        img = kitti.get_image(idx=0)
-        calib = kitti.get_calib(idx)
+        object_labels = dataset.get_label(idx)
+        img = kitti.get_image(idx=idx)
+        calib = dataset.get_calib(idx)
+        calib_kitti = kitti.get_calib(idx)
+        print(calib.P)
         rect_pts = calib.project_velo_to_rect(lidar[:, 0:3])
-        points_2d = calib.project_rect_to_image(rect_pts)
+        points_2d = calib_kitti.project_rect_to_image(rect_pts)
 
         # collect points in fov
         pts_image, pts_xyz_mask = get_mask(rect_pts, points_2d, imgsize=img.size)
 
         # project points onto image
-        if chosen_dataset != 'audi':
-            crop = None
-        else:
-            # crop image to audi's fov, because only objects inside audi's fov is labeled and kitti's fov is bigger
-            crop = (195, 1002)
         grid_img = pts_img_to_grid_img(pts_image, img.size, crop)
+        #grid_img = draw_2d_bboxes_label(grid_img, object_labels)
+        grid_img = draw_bboxes(grid_img, object_labels, calib_kitti)
 
         # save as plot
-        setup_plt()
-        output_name = dataset.files_list[idx].split('.')[0] + '.png'
-        output_path = os.path.join(dataset.lidar_fov_path, output_name)
-        save_as_grid_plt(grid_img, output_path)
+        #setup_plt()
+        #output_name = dataset.files_list[idx].split('.')[0] + '.png'
+        #output_path = os.path.join(dataset.lidar_fov_path, output_name)
+        #save_as_grid_plt(grid_img, output_path)
 
 
 if __name__ == "__main__":
-    _chosen_dataset = "audi"  # 'kitti', 'lyft', 'audi'
+    _chosen_dataset = "lyft"  # 'kitti', 'lyft', 'audi'
     main(_chosen_dataset)
