@@ -113,6 +113,51 @@ class Calibration(object):
         inv_Tr[0:3, 3] = np.dot(-np.transpose(Tr[0:3, 0:3]), Tr[0:3, 3])
         return inv_Tr
 
+    @staticmethod
+    def roty(t):
+        # Rotation about the y-axis.
+        c = np.cos(t)
+        s = np.sin(t)
+        return np.array([[c, 0, s],
+                         [0, 1, 0],
+                         [-s, 0, c]])
+
+    def compute_box_3d(self, obj):
+        ''' Takes an object and a projection matrix (P) and projects the 3d
+            bounding box into the image plane.
+            Returns:
+                corners_2d: (8,2) array in left image coord.
+                corners_3d: (8,3) array in in rect camera coord.
+        '''
+        # compute rotational matrix around yaw axis
+        R = self.roty(obj.ry)
+
+        # 3d bounding box dimensions
+        l = obj.l
+        w = obj.w
+        h = obj.h
+
+        # 3d bounding box corners
+        x_corners = [l / 2, l / 2, -l / 2, -l / 2, l / 2, l / 2, -l / 2, -l / 2]
+        y_corners = [0, 0, 0, 0, -h, -h, -h, -h]
+        z_corners = [w / 2, -w / 2, -w / 2, w / 2, w / 2, -w / 2, -w / 2, w / 2]
+
+        # rotate and translate 3d bounding box
+        corners_3d = np.dot(R, np.vstack([x_corners, y_corners, z_corners]))
+        # print corners_3d.shape
+        corners_3d[0, :] = corners_3d[0, :] + obj.t[0]
+        corners_3d[1, :] = corners_3d[1, :] + obj.t[1]
+        corners_3d[2, :] = corners_3d[2, :] + obj.t[2]
+        # print 'cornsers_3d: ', corners_3d
+        # only draw 3d bounding box for objs in front of the camera
+        if np.any(corners_3d[2, :] < 0.1):
+            corners_2d = None
+            return corners_2d, np.transpose(corners_3d)
+
+        # project the 3d bounding box into the image plane
+        corners_2d = self.project_rect_to_image(np.transpose(corners_3d))
+        # print 'corners_2d: ', corners_2d
+        return corners_2d, np.transpose(corners_3d)
 
 
 class KittiCalibration(Calibration):
