@@ -122,7 +122,7 @@ class Calibration(object):
                          [0, 1, 0],
                          [-s, 0, c]])
 
-    def compute_box_3d(self, obj):
+    def compute_box_3d(self, obj, max_distance):
         ''' Takes an object and a projection matrix (P) and projects the 3d
             bounding box into the image plane.
             Returns:
@@ -148,9 +148,10 @@ class Calibration(object):
         corners_3d[0, :] = corners_3d[0, :] + obj.t[0]
         corners_3d[1, :] = corners_3d[1, :] + obj.t[1]
         corners_3d[2, :] = corners_3d[2, :] + obj.t[2]
+
         # print 'cornsers_3d: ', corners_3d
         # only draw 3d bounding box for objs in front of the camera
-        if np.any(corners_3d[2, :] < 0.1):
+        if np.any(corners_3d[2, :] < 0.1) or np.all(corners_3d[2, :] > max_distance):
             corners_2d = None
             return corners_2d, np.transpose(corners_3d)
 
@@ -331,3 +332,16 @@ class AudiCalibration(Calibration):
         trans[0:3, 0:3] = rot
         trans[0:3, 3] = np.dot(rot, -transform_to_global[0:3, 3])
         return trans
+
+    def project_lidar_from_to(self, points, src_view, target_view):
+        trans = self.transform_from_to(src_view, target_view)
+        points_hom = np.ones((points.shape[0], 4))
+        points_hom[:, 0:3] = points
+        points_trans = (np.dot(trans, points_hom.T)).T
+        return points_trans
+
+    @staticmethod
+    def skew_sym_matrix(u):
+        return np.array([[0, -u[2], u[1]],
+                         [u[2], 0, -u[0]],
+                         [-u[1], u[0], 0]])

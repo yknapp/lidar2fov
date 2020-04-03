@@ -7,14 +7,21 @@ import json
 from PIL import Image
 from calibration import Calibration, KittiCalibration, AudiCalibration
 
+
 class Kitti:
     def __init__(self):
+        domain_name = 'audi'
         self.root_dir = "/home/user/work/master_thesis/datasets/kitti/kitti/object/training"
+        #self.root_dir = "/home/user/work/master_thesis/datasets/kitti/kitti/object/testing"
         self.lidar_path = os.path.join(self.root_dir, "velodyne")
+        self.lidar_fov_path = "/home/user/work/master_thesis/datasets/lidar_fov_images/kitti/training"
+        #self.lidar_path = "/home/user/work/master_thesis/code/UNIT/datasets/%s2kitti_2/testB" % domain_name
+        #self.lidar_fov_path = "/home/user/work/master_thesis/code/UNIT/datasets/%s2kitti_fov/testB" % domain_name
+        #self.lidar_path = "/home/user/work/master_thesis/code/UNIT/datasets/%s2kitti_2/trainB" % domain_name
+        #self.lidar_fov_path = "/home/user/work/master_thesis/code/UNIT/datasets/%s2kitti_fov/trainB" % domain_name
         self.image_path = os.path.join(self.root_dir, "image_2")
         self.calib_path = os.path.join(self.root_dir, "calib")
         self.label_path = os.path.join(self.root_dir, "label_2")
-        self.lidar_fov_path = "/home/user/work/master_thesis/datasets/lidar_fov_images/kitti/training"
         self.files_list = os.listdir(self.lidar_path)
 
     def get_lidar(self, idx):
@@ -73,11 +80,15 @@ class Kitti:
 class Lyft:
     def __init__(self):
         self.root_dir = "/home/user/work/master_thesis/datasets/lyft_kitti/object/training"
-        self.lidar_path = os.path.join(self.root_dir, "velodyne")
+        #self.lidar_path = os.path.join(self.root_dir, "velodyne")
+        #self.lidar_fov_path = "/home/user/work/master_thesis/datasets/lidar_fov_images/lyft"
+        self.lidar_path = "/home/user/work/master_thesis/code/UNIT/datasets/lyft2kitti_2/testA"
+        self.lidar_fov_path = "/home/user/work/master_thesis/code/UNIT/datasets/lyft2kitti_fov/testA"
+        #self.lidar_path = "/home/user/work/master_thesis/code/UNIT/datasets/lyft2kitti_2/trainA"
+        #self.lidar_fov_path = "/home/user/work/master_thesis/code/UNIT/datasets/lyft2kitti_fov/trainA"
         self.image_path = os.path.join(self.root_dir, "image_2")
         self.calib_path = os.path.join(self.root_dir, "calib")
         self.label_path = os.path.join(self.root_dir, "label_2")
-        self.lidar_fov_path = "/home/user/work/master_thesis/datasets/lidar_fov_images/lyft"
         self.files_list = os.listdir(self.lidar_path)
 
     def get_lidar(self, idx):
@@ -107,15 +118,20 @@ class Lyft:
 class Audi:
     def __init__(self):
         self.root_dir = "/home/user/work/master_thesis/datasets/audi/camera_lidar_semantic_bboxes"
-        self.lidar_path = os.path.join(self.root_dir, "lidar", "cam_front_center")
+        #self.lidar_path = os.path.join(self.root_dir, "lidar", "cam_front_center")
+        #self.lidar_fov_path = os.path.join(self.root_dir, "/home/user/work/master_thesis/datasets/lidar_fov_images/audi")
+        #self.lidar_path = "/home/user/work/master_thesis/code/UNIT/datasets/audi2kitti_2/testA"
+        #self.lidar_fov_path = "/home/user/work/master_thesis/code/UNIT/datasets/audi2kitti_fov/testA"
+        self.lidar_path = "/home/user/work/master_thesis/code/UNIT/datasets/audi2kitti_2/trainA"
+        self.lidar_fov_path = "/home/user/work/master_thesis/code/UNIT/datasets/audi2kitti_fov/trainA"
         self.image_path = os.path.join(self.root_dir, "camera", "cam_front_center")
         self.calib_path = os.path.join(self.root_dir, "cams_lidars.json")
         self.label_path = os.path.join(self.root_dir, "label3D", "cam_front_center")
-        self.lidar_fov_path = os.path.join(self.root_dir, "/home/user/work/master_thesis/datasets/lidar_fov_images/audi")
         self.files_list = os.listdir(self.lidar_path)
 
     def get_lidar(self, idx):
         lidar_file = os.path.join(self.lidar_path, self.files_list[idx])
+        print("LIDAR: ", lidar_file)
         assert os.path.exists(lidar_file)
         lidar_pc_raw = np.load(lidar_file)
         lidar_pc = np.zeros([lidar_pc_raw['points'].shape[0], 4])

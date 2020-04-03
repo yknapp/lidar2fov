@@ -1,4 +1,5 @@
 import numpy as np
+from calibration import AudiCalibration
 
 class KittiObject3d(object):
     ''' 3d object label '''
@@ -89,3 +90,36 @@ class AudiObject3d(object):
         self.ry = float(bbox['rot_angle'])
         self.score = -1.0
 
+        # additional things for testing
+        self.axis = np.array(bbox['axis'])
+        self.size = np.array(bbox['size'])
+
+    @staticmethod
+    def axis_angle_to_rotation_mat(axis, angle):
+        return np.cos(angle) * np.eye(3) + \
+               np.sin(angle) * AudiCalibration.skew_sym_matrix(axis) + \
+               (1 - np.cos(angle)) * np.outer(axis, axis)
+
+    @staticmethod
+    def get_3d_bbox_points(object_label, rotation):
+        half_size = object_label.size / 2.
+
+        if half_size[0] > 0:
+            # calculate unrotated corner point offsets relative to center
+            brl = np.asarray([-half_size[0], +half_size[1], -half_size[2]])
+            bfl = np.asarray([+half_size[0], +half_size[1], -half_size[2]])
+            bfr = np.asarray([+half_size[0], -half_size[1], -half_size[2]])
+            brr = np.asarray([-half_size[0], -half_size[1], -half_size[2]])
+            trl = np.asarray([-half_size[0], +half_size[1], +half_size[2]])
+            tfl = np.asarray([+half_size[0], +half_size[1], +half_size[2]])
+            tfr = np.asarray([+half_size[0], -half_size[1], +half_size[2]])
+            trr = np.asarray([-half_size[0], -half_size[1], +half_size[2]])
+
+            # rotate points
+            points = np.asarray([brl, bfl, bfr, brr, trl, tfl, tfr, trr])
+            points = np.dot(points, rotation.T)
+
+            # add center position
+            points = points + np.array(object_label.t)
+
+        return points
