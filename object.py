@@ -57,13 +57,6 @@ class KittiObject3d(object):
         print('3d bbox location, ry: (%f, %f, %f), %f' % \
               (self.t[0], self.t[1], self.t[2], self.ry))
 
-    def to_kitti_format(self):
-        kitti_str = '%s %.2f %d %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f' \
-                    % (self.class_name, self.truncation, int(self.occlusion), self.alpha, self.box2d[0], self.box2d[1],
-                       self.box2d[2], self.box2d[3], self.h, self.w, self.l, self.t[0], self.t[1], self.t[2],
-                       self.ry, self.score)
-        return kitti_str
-
 
 class AudiObject3d(object):
     def __init__(self, bbox):
