@@ -263,5 +263,5 @@ def main(chosen_dataset, crop=(None, None, None, None), show=False):
 if __name__ == "__main__":
     _chosen_dataset = "kitti"  # 'kitti', 'lyft', 'audi'
     show = True  # if true, then FOV projected lidar images are just shown and not stored to numpy files
-    #main(_chosen_dataset, show)
-    main(_chosen_dataset, (None, None, 195, 1002), show)  # crops FOV image, if crop != None; structure: (y_min, y_max, x_min, x_max)
+    main(_chosen_dataset, show=show)
+    #main(_chosen_dataset, (None, None, 195, 1002), show)  # crops FOV image, if crop != None; structure: (y_min, y_max, x_min, x_max)
