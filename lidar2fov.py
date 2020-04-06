@@ -7,6 +7,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
+import imageio
 
 from PIL import Image
 from dataset import Kitti, Lyft, Audi
@@ -194,15 +195,18 @@ def save_as_grid_plt(grid_img, output_path):
     print("Grid size: ", Image.open(output_path).size)
     
 
-def main(chosen_dataset, crop=(None, None, None, None), show=False):
+def main(chosen_dataset, export_type='show'):
     dataset = None
     kitti = Kitti()
+    # no crop by default
+    crop = (None, None, None, None)  # (y_min, y_max, x_min, x_max)
     if chosen_dataset == "kitti":
         dataset = Kitti()
     elif chosen_dataset == "lyft":
         dataset = Lyft()
     elif chosen_dataset == "audi":
         dataset = Audi()
+        crop = (None, None, 195, 1002)  # crop Audi images due to limited FOV of Audi's LiDAR
     else:
         print("Error: Unknown dataset '%s'" % chosen_dataset)
         exit()
@@ -243,25 +247,47 @@ def main(chosen_dataset, crop=(None, None, None, None), show=False):
         # fov is bigger
         grid_img = grid_img[crop[0]:crop[1], crop[2]:crop[3]]
 
-        # only show output instead of saving to numpy file
-        if show:
-            cv2.imshow("Camera FOV Projected LiDAR", grid_img)
+        # export LiDAR FOV image
+        output_name = dataset.files_list[idx].split('.')[0]
+        output_path = os.path.join(dataset.lidar_fov_path, output_name)
+
+        # export image by type
+        if export_type == 'show':
+            # only show output instead of saving to numpy file
+            cv2.imshow("Camera FOV Projected LiDAR: %s" % output_name, grid_img)
             cv2.waitKey()
             exit()
+        elif export_type == 'numpy':
+            # save as numpy array
+            output_path_npy = output_path + '.npy'
+            np.save(output_path_npy, grid_img)
+            print("Image saved to ", output_path_npy)
+        elif export_type == 'plot':
+            # save as plot
+            setup_plt()
+            output_path_plt = output_path + '.png'
+            save_as_grid_plt(grid_img, output_path_plt)
+            print("Image saved to ", output_path_plt)
+        elif export_type == 'png':
+            # save as (resized) png
+            output_path_png = output_path + '.png'
+            # transform to PIL image and resize as in UNIT
+            grid_img_pil = Image.fromarray(grid_img)
+            if chosen_dataset != 'audi':
+                grid_img_pil_resized = grid_img_pil.resize((844, 256), Image.BILINEAR)  # lyft2kitti: same method as torch resizing
+            else:
+                grid_img_pil_resized = grid_img_pil.resize((548, 256), Image.BILINEAR)  # audi2kitti: same method as torch resizing
+            grid_img_np = np.asarray(grid_img_pil_resized)
+            imageio.imwrite(output_path_png, grid_img_np)
+            print("Image saved to ", output_path_png)
+        else:
+            print("Error: Unknown export type '%s'" % export_type)
+            exit()
 
-        # save as numpy array
-        output_name = dataset.files_list[idx].split('.')[0] + '.npy'
-        output_path = os.path.join(dataset.lidar_fov_path, output_name)
-        np.save(output_path, grid_img)
-        # save as plot
-        #setup_plt()
-        #output_name = dataset.files_list[idx].split('.')[0] + '.png'
-        #output_path = os.path.join(dataset.lidar_fov_path, output_name)
-        #save_as_grid_plt(grid_img, output_path)
+
 
 
 if __name__ == "__main__":
     _chosen_dataset = "kitti"  # 'kitti', 'lyft', 'audi'
-    show = True  # if true, then FOV projected lidar images are just shown and not stored to numpy files
-    main(_chosen_dataset, show=show)
-    #main(_chosen_dataset, (None, None, 195, 1002), show)  # crops FOV image, if crop != None; structure: (y_min, y_max, x_min, x_max)
+    export_type="png"  # 'show', 'numpy', 'plot', 'png'
+    main(_chosen_dataset, export_type=export_type)  # just show FOV images

@@ -14,11 +14,12 @@ class Kitti:
         self.root_dir = "/home/user/work/master_thesis/datasets/kitti/kitti/object/training"
         #self.root_dir = "/home/user/work/master_thesis/datasets/kitti/kitti/object/testing"
         self.lidar_path = os.path.join(self.root_dir, "velodyne")
-        self.lidar_fov_path = "/home/user/work/master_thesis/datasets/lidar_fov_images/kitti/training"
+        #self.lidar_fov_path = "/home/user/work/master_thesis/datasets/lidar_fov_images/kitti/training"
         #self.lidar_path = "/home/user/work/master_thesis/code/UNIT/datasets/%s2kitti_2/testB" % domain_name
         #self.lidar_fov_path = "/home/user/work/master_thesis/code/UNIT/datasets/%s2kitti_fov/testB" % domain_name
         #self.lidar_path = "/home/user/work/master_thesis/code/UNIT/datasets/%s2kitti_2/trainB" % domain_name
         #self.lidar_fov_path = "/home/user/work/master_thesis/code/UNIT/datasets/%s2kitti_fov/trainB" % domain_name
+        self.lidar_fov_path = "/home/user/work/master_thesis/code/yolov3/kitti"
         self.image_path = os.path.join(self.root_dir, "image_2")
         self.calib_path = os.path.join(self.root_dir, "calib")
         self.label_path = os.path.join(self.root_dir, "label_2")
