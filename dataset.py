@@ -38,11 +38,8 @@ class Kitti:
         assert os.path.exists(img_file)
         return Image.open(img_file).convert("L")
 
-    def get_calib(self, idx):
-        #calib_file = os.path.join(self.calib_path, self.files_list[idx].replace('.bin', '.txt'))
-        #assert os.path.exists(calib_file)
-        #return KittiCalibration(calib_file)
-
+    @staticmethod
+    def get_mean_calib():
         # calibration with mean values of all kitti calibration files
         calib = Calibration()
         calib.P = np.array([[719.787081, 0., 608.463003, 44.9538775],
@@ -68,6 +65,11 @@ class Kitti:
         calib.b_y = calib.P[1, 3] / (-calib.f_v)
 
         return calib
+
+    def get_calib(self, idx):
+        calib_file = os.path.join(self.calib_path, self.files_list[idx].replace('.bin', '.txt'))
+        assert os.path.exists(calib_file)
+        return KittiCalibration(calib_file)
 
     def get_label(self, idx):
         label_file = os.path.join(self.label_path, self.files_list[idx].replace('.bin', '.txt'))

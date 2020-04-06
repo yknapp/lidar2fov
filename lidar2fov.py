@@ -216,11 +216,10 @@ def main(chosen_dataset, crop=(None, None, None, None), show=False):
     max_distance = 80.0
 
     for idx in range(len(dataset.files_list)):
-        idx=3
         lidar = dataset.get_lidar(idx)
         img = kitti.get_image(idx=idx)
         calib = dataset.get_calib(idx)
-        calib_kitti = kitti.get_calib(idx)
+        calib_kitti = kitti.get_mean_calib()
 
         # take KITTI calibration for AUDI dataset, because each lidars (and corresponding bounding boxes) have no own
         # unique calibrations
