@@ -109,6 +109,7 @@ def setup_plt():
 
 def draw_2d_bboxes_label(grid_img, object_labels):
     #grid_img = np.array(grid_img)
+    grid_img *= 255
     grid_img = grid_img.astype(np.uint8)
     line_thickness = 1
     for object_label in object_labels:
