@@ -89,6 +89,7 @@ class AudiObject3d(object):
         self.t = (center_x, center_y, center_z)  # location (x,y,z) in camera coord.
         self.ry = float(bbox['rot_angle'])
         self.score = -1.0
+        self.level = self.get_obj_level()
 
         # additional things for testing
         self.axis = np.array(bbox['axis'])
@@ -123,3 +124,29 @@ class AudiObject3d(object):
             points = points + np.array(object_label.t)
 
         return points
+
+    def get_obj_level(self):
+        height = float(self.box2d[3]) - float(self.box2d[1]) + 1
+
+        if height >= 40 and self.truncation <= 0.15 and self.occlusion <= 0:
+            self.level_str = 'Easy'
+            return 1  # Easy
+        elif height >= 25 and self.truncation <= 0.3 and self.occlusion <= 1:
+            self.level_str = 'Moderate'
+            return 2  # Moderate
+        elif height >= 25 and self.truncation <= 0.5 and self.occlusion <= 2:
+            self.level_str = 'Hard'
+            return 3  # Hard
+        else:
+            self.level_str = 'UnKnown'
+            return 4
+
+    def print_object(self):
+        print('Type, truncation, occlusion, alpha: %s, %d, %d, %f' % \
+              (self.class_name, self.truncation, self.occlusion, self.alpha))
+        print('2d bbox (x0,y0,x1,y1): %f, %f, %f, %f' % \
+              (self.xmin, self.ymin, self.xmax, self.ymax))
+        print('3d bbox h,w,l: %f, %f, %f' % \
+              (self.h, self.w, self.l))
+        print('3d bbox location, ry: (%f, %f, %f), %f' % \
+              (self.t[0], self.t[1], self.t[2], self.ry))
