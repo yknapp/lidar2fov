@@ -164,13 +164,7 @@ def draw_bboxes_audi(grid_img, object_labels, calib, max_distance):
         bbox_3d = AudiObject3d.get_3d_bbox_points(object_label, bbox_rotation)
         bbox_3d_rect = calib.project_velo_to_rect(bbox_3d)
 
-        #if np.any(bbox_3d_rect[2, :] < 0.1) or
-        # This condition is from KITTI's "calib.compute_box_3d()" method.
-        # Even if this condition is removed there, the bounding boxes are still not visible.
-        # BESIDES: these invisible bounding boxes are also not displayed with method "draw_2d_bboxes_label", which
-        # means that these bounding boxes are not wanted for camera 2D object detection
-        if np.all(bbox_3d_rect[2, :] > max_distance):
-
+        if np.any(bbox_3d_rect[:, 2] < 0.1) or np.all(bbox_3d_rect[:, 2] > max_distance):
             continue
 
         bbox_2d = calib.project_rect_to_image(bbox_3d_rect)
