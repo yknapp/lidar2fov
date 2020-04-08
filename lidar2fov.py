@@ -14,6 +14,27 @@ from PIL import Image
 from dataset import Kitti, Lyft, Audi
 
 
+# CLASS NAMES WITH IDs
+CLASS_NAME_TO_ID_KITTI = {
+    'Car': 0,
+    'Pedestrian': 1,
+    'Cyclist': 2,
+    'Van': 0,
+    'Person_sitting': 1
+}
+CLASS_NAME_TO_ID_LYFT = {
+    'car': 				    0,
+    'pedestrian': 		    1,
+    'bicycle': 			    2
+}
+CLASS_NAME_TO_ID_AUDI = {
+    'Car': 				    0,
+    'Pedestrian': 		    1,
+    'Bicycle': 			    2,
+    'Cyclist':              2
+}
+
+
 def get_mask(rect_pts, points_2d, imgsize):
     mask = (points_2d[:, 0] >= 0) & (points_2d[:, 0] < imgsize[0]) & \
            (points_2d[:, 1] >= 0) & (points_2d[:, 1] < imgsize[1])
@@ -121,11 +142,18 @@ def main(chosen_dataset, export_type='show'):
     crop = (None, None, None, None)  # (y_min, y_max, x_min, x_max)
     if chosen_dataset == "kitti":
         dataset = Kitti()
+        class_names_to_id = CLASS_NAME_TO_ID_KITTI
     elif chosen_dataset == "lyft":
         dataset = Lyft()
+        class_names_to_id = CLASS_NAME_TO_ID_LYFT
     elif chosen_dataset == "audi":
         dataset = Audi()
+        class_names_to_id = CLASS_NAME_TO_ID_AUDI
         crop = (None, None, 195, 1002)  # crop Audi images due to limited FOV of Audi's LiDAR
+    elif chosen_dataset == "kitti_cropped":
+        dataset = Kitti()
+        class_names_to_id = CLASS_NAME_TO_ID_KITTI
+        crop = (None, None, 195, 1002)  # crop KITTI images due to limited FOV of Audi's LiDAR
     else:
         print("Error: Unknown dataset '%s'" % chosen_dataset)
         exit()
@@ -134,8 +162,9 @@ def main(chosen_dataset, export_type='show'):
     max_distance = 80.0
 
     for idx in range(len(dataset.files_list)):
+        #idx=dataset.files_list.index("20180810142822_lidar_frontcenter_000046936.npz")
         lidar = dataset.get_lidar(idx)
-        img = kitti.get_image(idx=idx)
+        img_kitti = kitti.get_image(idx=1)
         calib = dataset.get_calib(idx)
         calib_kitti = kitti.get_mean_calib()
 
@@ -151,20 +180,20 @@ def main(chosen_dataset, export_type='show'):
         points_2d = calib_kitti.project_rect_to_image(rect_pts)
 
         # collect points in fov
-        pts_image, pts_xyz_mask = get_mask(rect_pts, points_2d, imgsize=img.size)
+        pts_image, pts_xyz_mask = get_mask(rect_pts, points_2d, imgsize=img_kitti.size)
 
         # project points onto image
-        grid_img = lidarimg2grid(pts_image, img.size, max_distance)
-
-        # show bounding boxes
-        #object_labels = dataset.get_label(idx)
-        #labels.draw_2d_bboxes_label(grid_img, object_labels)
-        #labels.draw_bboxes(grid_img, object_labels, calib_kitti, max_distance)
-        #labels.draw_bboxes_audi(grid_img, object_labels, calib_kitti, max_distance)
+        grid_img = lidarimg2grid(pts_image, img_kitti.size, max_distance)
 
         # crop image horizontally. I.e. for audi's fov, because only objects inside audi's fov is labeled and kitti's
         # fov is bigger
         grid_img = grid_img[crop[0]:crop[1], crop[2]:crop[3]]
+
+        # show bounding boxes
+        #object_labels = dataset.get_label(idx)
+        #labels.draw_2d_bboxes_label(grid_img, object_labels)  # doesn't support cropping
+        #labels.draw_bboxes(grid_img, object_labels, calib_kitti, max_distance, grid_img.shape, crop)
+        #labels.draw_bboxes_audi(grid_img, object_labels, calib_kitti, max_distance, grid_img.shape, crop)
 
         # export LiDAR FOV image
         output_name = dataset.files_list[idx].split('.')[0]
@@ -192,21 +221,28 @@ def main(chosen_dataset, export_type='show'):
             output_path_png = output_path + '.png'
             # transform to PIL image and resize as in UNIT
             grid_img_pil = Image.fromarray(grid_img)
-            if chosen_dataset != 'audi':
+            if chosen_dataset not in ('audi', 'kitti_cropped'):
                 grid_img_pil_resized = grid_img_pil.resize((844, 256), Image.BILINEAR)  # lyft2kitti: same method as torch resizing
             else:
                 grid_img_pil_resized = grid_img_pil.resize((548, 256), Image.BILINEAR)  # audi2kitti: same method as torch resizing
             grid_img_np = np.asarray(grid_img_pil_resized)
             imageio.imwrite(output_path_png, grid_img_np)
             print("Image saved to ", output_path_png)
+
+            # export YOLO formatted label
+            object_labels = dataset.get_label(idx)
+            if chosen_dataset != 'audi':
+                bbox_2d_list = labels.get_2d_bboxes(object_labels, calib_kitti, max_distance, grid_img.shape, crop)
+            else:
+                bbox_2d_list = labels.get_2d_bboxes_audi(object_labels, calib_kitti, max_distance, grid_img.shape, crop)
+            output_path_yolo_label = output_path + '.txt'
+            labels.export_yolo_label(bbox_2d_list, class_names_to_id, output_path_yolo_label, grid_img.shape)
         else:
             print("Error: Unknown export type '%s'" % export_type)
             exit()
 
 
-
-
 if __name__ == "__main__":
-    _chosen_dataset = "kitti"  # 'kitti', 'lyft', 'audi'
+    _chosen_dataset = "kitti_cropped"  # 'kitti', 'lyft', 'audi', 'kitti_cropped'
     export_type="png"  # 'show', 'numpy', 'plot', 'png'
     main(_chosen_dataset, export_type=export_type)  # just show FOV images
