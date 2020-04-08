@@ -150,7 +150,7 @@ class Calibration(object):
         corners_3d[2, :] = corners_3d[2, :] + obj.t[2]
 
         # print 'cornsers_3d: ', corners_3d
-        # only draw 3d bounding box for objs in front of the camera
+        # only draw 3d bounding box for objs in front of the camera and smaller than maximum distance
         if np.any(corners_3d[2, :] < 0.1) or np.all(corners_3d[2, :] > max_distance):
             corners_2d = None
             return corners_2d, np.transpose(corners_3d)
